@@ -31,8 +31,16 @@ app.get("/", (req, res) => {
 });
 
 app.get("/matches", async (req, res) => {
+  const userId = "1234";
+  // const userId = "5678";
   try {
-    const matchesList = await pool.query("SELECT * FROM matches");
+    const matchesList = await pool.query(
+      //if userid (logged in)
+      `SELECT * FROM user_votes RIGHT JOIN matches ON matches.id=user_votes.match_id AND user_votes.user_id=$1 ORDER BY popularity DESC`,
+      [userId]
+      //else
+      // "SELECT * FROM matches ORDER BY popularity DESC"
+    );
 
     res.status(200).json(matchesList.rows);
   } catch (err) {
