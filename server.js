@@ -65,6 +65,59 @@ app.post("/add", async (req, res) => {
   }
 });
 
+//update votes in matches
+app.patch("/matches/:id", async (req, res) => {
+  const { id } = req.params;
+  const { votedFor } = req.body;
+
+  try {
+    let updateQuery;
+    if (votedFor === "movie") {
+      updateQuery = `UPDATE matches SET movie_votes = movie_votes + 1 WHERE id = $1 RETURNING *`;
+    } else {
+      updateQuery = `UPDATE matches SET book_votes = book_votes + 1 WHERE id = $1 RETURNING *`;
+    }
+    const matchesList = await pool.query(updateQuery, [id]);
+
+    res.status(200).json(matchesList.rows);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+//update votes in user_votes
+app.post("/user-votes/:userId", async (req, res) => {
+  const { userId } = req.params;
+  // const userId = "1234";
+  const { matchId, votedFor } = req.body;
+
+  try {
+    const insertQuery = `INSERT INTO user_votes VALUES($1, $2, $3) RETURNING *`;
+
+    const up = await pool.query(insertQuery, [userId, matchId, votedFor]);
+    res.status(200);
+    // res.status(200).json(matchesList.rows);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+//delete
+app.delete("/delete", async (req, res) => {
+  // const userId = "1234";
+  const { matchId } = req.body;
+
+  try {
+    const deleteQuery = `DELETE FROM matches where id=$1 RETURNING *`;
+
+    const deletedMatch = await pool.query(deleteQuery, [matchId]);
+    res.status(200).json(deletedMatch.rows[0]);
+    // res.status(200).json(matchesList.rows);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 const PORT = process.env.PORT;
 
 app.listen(PORT || 3000, () => console.log(`App listening to port ${PORT}`));
