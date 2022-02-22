@@ -30,9 +30,10 @@ app.get("/", (req, res) => {
   res.json("Server running.");
 });
 
-app.get("/matches", async (req, res) => {
-  const userId = "1234";
+app.get("/matches/:userId", async (req, res) => {
+  // const userId = "1234";
   // const userId = "5678";
+  const { userId } = req.params;
   try {
     const matchesList = await pool.query(
       //if userid (logged in)
@@ -58,8 +59,7 @@ app.post("/add", async (req, res) => {
       `INSERT INTO matches VALUES ($1, $2, $3, 0, 0, $4) RETURNING *;`,
       [id, JSON.stringify(bookInfo), JSON.stringify(movieInfo), popularity]
     );
-
-    res.json(newMatch.rows[0]);
+    res.status(200).json(newMatch.rows[0]);
   } catch (error) {
     console.log(error);
   }
@@ -77,9 +77,8 @@ app.patch("/matches/:id", async (req, res) => {
     } else {
       updateQuery = `UPDATE matches SET book_votes = book_votes + 1 WHERE id = $1 RETURNING *`;
     }
-    const matchesList = await pool.query(updateQuery, [id]);
-
-    res.status(200).json(matchesList.rows);
+    const updatedMatch = await pool.query(updateQuery, [id]);
+    res.status(200).json(updatedMatch.rows[0]);
   } catch (err) {
     console.log(err);
   }
@@ -94,8 +93,8 @@ app.post("/user-votes/:userId", async (req, res) => {
   try {
     const insertQuery = `INSERT INTO user_votes VALUES($1, $2, $3) RETURNING *`;
 
-    const up = await pool.query(insertQuery, [userId, matchId, votedFor]);
-    res.status(200);
+    const userVote = await pool.query(insertQuery, [userId, matchId, votedFor]);
+    res.status(200).json(userVote.rows[0]);
     // res.status(200).json(matchesList.rows);
   } catch (err) {
     console.log(err);
