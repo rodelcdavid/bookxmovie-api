@@ -31,3 +31,6 @@ INSERT INTO user_votes VALUES ('1234', 'c0937594-c273-409e-a39f-48876d96b0fb', '
 
 --Combine matches and user_votes
 SELECT * FROM user_votes RIGHT JOIN matches ON matches.id=user_votes.match_id AND user_votes.user_id='1234';
+
+--update match votes
+UPDATE matches SET movie_votes = 1344, book_votes = 3143 WHERE id = 'c0937594-c273-409e-a39f-48876d96b0fb';

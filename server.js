@@ -95,6 +95,39 @@ app.post("/user-votes/:userId", async (req, res) => {
   }
 });
 
+//add vote transaction
+app.post("/vote/:matchId", async (req, res) => {
+  const { matchId } = req.params;
+  const { userId, votedFor } = req.body;
+  console.log(matchId, userId, votedFor);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    //add vote to matches table
+    let updateQuery;
+    if (votedFor === "movie") {
+      updateQuery = `UPDATE matches SET movie_votes = movie_votes + 1 WHERE id = $1 RETURNING *`;
+    } else {
+      updateQuery = `UPDATE matches SET book_votes = book_votes + 1 WHERE id = $1 RETURNING *`;
+    }
+    const updatedMatch = await pool.query(updateQuery, [matchId]);
+
+    //add new user vote
+    const insertQuery = `INSERT INTO user_votes VALUES($1, $2, $3) RETURNING *`;
+
+    const userVote = await pool.query(insertQuery, [userId, matchId, votedFor]);
+
+    //just send res status 200
+    res.status(200).json("Vote added");
+  } catch (e) {
+    await client.query("ROLLBACK");
+    res.status(400).json(e);
+  } finally {
+    client.release();
+  }
+});
+
 //delete
 app.delete("/delete", async (req, res) => {
   const { matchId } = req.body;
