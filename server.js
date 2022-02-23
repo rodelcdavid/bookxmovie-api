@@ -31,8 +31,6 @@ app.get("/", (req, res) => {
 });
 
 app.get("/matches/:userId", async (req, res) => {
-  // const userId = "1234";
-  // const userId = "5678";
   const { userId } = req.params;
   try {
     const matchesList = await pool.query(
@@ -50,9 +48,7 @@ app.get("/matches/:userId", async (req, res) => {
 });
 
 app.post("/add", async (req, res) => {
-  // console.log(req.body.match);
-
-  const { id, bookInfo, movieInfo, popularity } = req.body.match;
+  const { id, bookInfo, movieInfo, popularity } = req.body;
 
   try {
     const newMatch = await pool.query(
@@ -66,10 +62,9 @@ app.post("/add", async (req, res) => {
 });
 
 //update votes in matches
-app.patch("/matches/:id", async (req, res) => {
-  const { id } = req.params;
+app.patch("/matches/:matchId", async (req, res) => {
+  const { matchId } = req.params;
   const { votedFor } = req.body;
-
   try {
     let updateQuery;
     if (votedFor === "movie") {
@@ -77,17 +72,16 @@ app.patch("/matches/:id", async (req, res) => {
     } else {
       updateQuery = `UPDATE matches SET book_votes = book_votes + 1 WHERE id = $1 RETURNING *`;
     }
-    const updatedMatch = await pool.query(updateQuery, [id]);
+    const updatedMatch = await pool.query(updateQuery, [matchId]);
     res.status(200).json(updatedMatch.rows[0]);
   } catch (err) {
     console.log(err);
   }
 });
 
-//update votes in user_votes
+//add votes in user_votes
 app.post("/user-votes/:userId", async (req, res) => {
   const { userId } = req.params;
-  // const userId = "1234";
   const { matchId, votedFor } = req.body;
 
   try {
@@ -103,7 +97,6 @@ app.post("/user-votes/:userId", async (req, res) => {
 
 //delete
 app.delete("/delete", async (req, res) => {
-  // const userId = "1234";
   const { matchId } = req.body;
 
   try {
