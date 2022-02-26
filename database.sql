@@ -34,3 +34,20 @@ SELECT * FROM user_votes RIGHT JOIN matches ON matches.id=user_votes.match_id AN
 
 --update match votes
 UPDATE matches SET movie_votes = 1344, book_votes = 3143 WHERE id = 'c0937594-c273-409e-a39f-48876d96b0fb';
+
+
+--users
+CREATE TABLE users(
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(320) UNIQUE NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    joined TIMESTAMP NOT NULL
+);
+
+--login
+CREATE TABLE login(
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(320) UNIQUE NOT NULL,
+    password VARCHAR(100) NOT NULL
+);
