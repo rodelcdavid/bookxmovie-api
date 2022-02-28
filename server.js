@@ -115,7 +115,6 @@ app.get("/check-email/:email", async (req, res) => {
 
 app.get("/matches/:userId", async (req, res) => {
   const { userId } = req.params;
-  console.log(userId);
   try {
     let matchesList;
     if (userId === "guest") {
@@ -229,6 +228,25 @@ app.delete("/delete", async (req, res) => {
     const deletedMatch = await pool.query(deleteQuery, [matchId]);
     res.status(200).json(deletedMatch.rows[0]);
     // res.status(200).json(matchesList.rows);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+//update vote
+app.patch("/votes/:matchId", async (req, res) => {
+  const { matchId } = req.params;
+  const { bookVotes, movieVotes } = req.body;
+  try {
+    const updateQuery = `UPDATE matches SET book_votes=$1, movie_votes=$2 WHERE id=$3 RETURNING *;`;
+
+    const updatedMatch = await pool.query(updateQuery, [
+      bookVotes,
+      movieVotes,
+      matchId,
+    ]);
+
+    res.status(200).json(updatedMatch.rows[0]);
   } catch (err) {
     console.log(err);
   }
