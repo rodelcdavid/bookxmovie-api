@@ -1,6 +1,6 @@
--- match table
+-- matchups table
 -- id, bookinfo, movieinfo, bookvotes, movievotes, popularity
-CREATE TABLE matches(
+CREATE TABLE matchups(
     id VARCHAR(50) PRIMARY KEY NOT NULL,
     bookInfo JSON NOT NULL,
     movieInfo JSON NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE matches(
 );
 
 --underscore
-CREATE TABLE matches(
+CREATE TABLE matchups(
     id VARCHAR(50) PRIMARY KEY NOT NULL,
     book_info JSON NOT NULL,
     movie_info JSON NOT NULL,
@@ -22,18 +22,18 @@ CREATE TABLE matches(
 --uservotes table
 CREATE TABLE user_votes(
     user_id VARCHAR NOT NULL,
-    match_id VARCHAR(50) NOT NULL,
+    matchup_id VARCHAR(50) NOT NULL,
     voted_for VARCHAR(10) NOT NULL
 );
 
 --add new vote
 INSERT INTO user_votes VALUES ('1234', 'c0937594-c273-409e-a39f-48876d96b0fb', 'book');
 
---Combine matches and user_votes
-SELECT * FROM user_votes RIGHT JOIN matches ON matches.id=user_votes.match_id AND user_votes.user_id='1234';
+--Combine matchups and user_votes
+SELECT * FROM user_votes RIGHT JOIN matchups ON matchups.id=user_votes.matchup_id AND user_votes.user_id='1234';
 
---update match votes
-UPDATE matches SET movie_votes = 1344, book_votes = 3143 WHERE id = 'c0937594-c273-409e-a39f-48876d96b0fb';
+--update matchups votes
+UPDATE matchups SET movie_votes = 1344, book_votes = 3143 WHERE id = 'c0937594-c273-409e-a39f-48876d96b0fb';
 
 
 --users

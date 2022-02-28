@@ -113,18 +113,18 @@ app.get("/check-email/:email", async (req, res) => {
   }
 });
 
-app.get("/matches/:userId", async (req, res) => {
+app.get("/matchups/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
-    let matchesList;
+    let matchups;
     if (userId === "guest") {
-      const selectQuery = `SELECT * FROM matches ORDER BY popularity DESC;`;
-      matchesList = await pool.query(selectQuery);
+      const selectQuery = `SELECT * FROM matchups ORDER BY popularity DESC;`;
+      matchups = await pool.query(selectQuery);
     } else {
-      const selectQuery = `SELECT * FROM user_votes RIGHT JOIN matches ON matches.id=user_votes.match_id AND user_votes.user_id=$1 ORDER BY popularity DESC;`;
-      matchesList = await pool.query(selectQuery, [userId]);
+      const selectQuery = `SELECT * FROM user_votes RIGHT JOIN matchups ON matchups.id=user_votes.matchup_id AND user_votes.user_id=$1 ORDER BY popularity DESC;`;
+      matchups = await pool.query(selectQuery, [userId]);
     }
-    res.status(200).json(matchesList.rows);
+    res.status(200).json(matchups.rows);
   } catch (err) {
     console.log(err);
   }
@@ -135,8 +135,8 @@ app.post("/add", async (req, res) => {
     req.body;
 
   try {
-    const newMatch = await pool.query(
-      `INSERT INTO matches VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;`,
+    const newMatchup = await pool.query(
+      `INSERT INTO matchups VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;`,
       [
         id,
         JSON.stringify(bookInfo),
@@ -146,25 +146,25 @@ app.post("/add", async (req, res) => {
         popularity,
       ]
     );
-    res.status(200).json(newMatch.rows[0]);
+    res.status(200).json(newMatchup.rows[0]);
   } catch (error) {
     console.log(error);
   }
 });
 
-//update votes in matches
-app.patch("/matches/:matchId", async (req, res) => {
-  const { matchId } = req.params;
+//update votes in matchups
+app.patch("/matchups/:matchupId", async (req, res) => {
+  const { matchupId } = req.params;
   const { votedFor } = req.body;
   try {
     let updateQuery;
     if (votedFor === "movie") {
-      updateQuery = `UPDATE matches SET movie_votes = movie_votes + 1 WHERE id = $1 RETURNING *`;
+      updateQuery = `UPDATE matchups SET movie_votes = movie_votes + 1 WHERE id = $1 RETURNING *`;
     } else {
-      updateQuery = `UPDATE matches SET book_votes = book_votes + 1 WHERE id = $1 RETURNING *`;
+      updateQuery = `UPDATE matchups SET book_votes = book_votes + 1 WHERE id = $1 RETURNING *`;
     }
-    const updatedMatch = await pool.query(updateQuery, [matchId]);
-    res.status(200).json(updatedMatch.rows[0]);
+    const updatedMatchup = await pool.query(updateQuery, [matchupId]);
+    res.status(200).json(updatedMatchup.rows[0]);
   } catch (err) {
     console.log(err);
   }
@@ -173,40 +173,48 @@ app.patch("/matches/:matchId", async (req, res) => {
 //add votes in user_votes
 app.post("/user-votes/:userId", async (req, res) => {
   const { userId } = req.params;
-  const { matchId, votedFor } = req.body;
+  const { matchupId, votedFor } = req.body;
 
   try {
     const insertQuery = `INSERT INTO user_votes VALUES($1, $2, $3) RETURNING *`;
 
-    const userVote = await pool.query(insertQuery, [userId, matchId, votedFor]);
+    const userVote = await pool.query(insertQuery, [
+      userId,
+      matchupId,
+      votedFor,
+    ]);
     res.status(200).json(userVote.rows[0]);
-    // res.status(200).json(matchesList.rows);
+    // res.status(200).json(matchups.rows);
   } catch (err) {
     console.log(err);
   }
 });
 
 //add vote transaction
-app.post("/vote/:matchId", async (req, res) => {
-  const { matchId } = req.params;
+app.post("/vote/:matchupId", async (req, res) => {
+  const { matchupId } = req.params;
   const { userId, votedFor } = req.body;
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
-    //add vote to matches table
+    //add vote to matchups table
     let updateQuery;
     if (votedFor === "movie") {
-      updateQuery = `UPDATE matches SET movie_votes = movie_votes + 1 WHERE id = $1 RETURNING *`;
+      updateQuery = `UPDATE matchups SET movie_votes = movie_votes + 1 WHERE id = $1 RETURNING *`;
     } else {
-      updateQuery = `UPDATE matches SET book_votes = book_votes + 1 WHERE id = $1 RETURNING *`;
+      updateQuery = `UPDATE matchups SET book_votes = book_votes + 1 WHERE id = $1 RETURNING *`;
     }
-    const updatedMatch = await pool.query(updateQuery, [matchId]);
+    const updatedMatchup = await pool.query(updateQuery, [matchupId]);
 
     //add new user vote
     const insertQuery = `INSERT INTO user_votes VALUES($1, $2, $3) RETURNING *`;
 
-    const userVote = await pool.query(insertQuery, [userId, matchId, votedFor]);
+    const userVote = await pool.query(insertQuery, [
+      userId,
+      matchupId,
+      votedFor,
+    ]);
 
     //just send res status 200
     res.status(200).json("Vote added");
@@ -220,33 +228,33 @@ app.post("/vote/:matchId", async (req, res) => {
 
 //delete
 app.delete("/delete", async (req, res) => {
-  const { matchId } = req.body;
+  const { matchupId } = req.body;
 
   try {
-    const deleteQuery = `DELETE FROM matches where id=$1 RETURNING *`;
+    const deleteQuery = `DELETE FROM matchups where id=$1 RETURNING *`;
 
-    const deletedMatch = await pool.query(deleteQuery, [matchId]);
-    res.status(200).json(deletedMatch.rows[0]);
-    // res.status(200).json(matchesList.rows);
+    const deletedMatchup = await pool.query(deleteQuery, [matchupId]);
+    res.status(200).json(deletedMatchup.rows[0]);
+    // res.status(200).json(matchups.rows);
   } catch (err) {
     console.log(err);
   }
 });
 
 //update vote
-app.patch("/votes/:matchId", async (req, res) => {
-  const { matchId } = req.params;
+app.patch("/votes/:matchupId", async (req, res) => {
+  const { matchupId } = req.params;
   const { bookVotes, movieVotes } = req.body;
   try {
-    const updateQuery = `UPDATE matches SET book_votes=$1, movie_votes=$2 WHERE id=$3 RETURNING *;`;
+    const updateQuery = `UPDATE matchups SET book_votes=$1, movie_votes=$2 WHERE id=$3 RETURNING *;`;
 
-    const updatedMatch = await pool.query(updateQuery, [
+    const updatedMatchup = await pool.query(updateQuery, [
       bookVotes,
       movieVotes,
-      matchId,
+      matchupId,
     ]);
 
-    res.status(200).json(updatedMatch.rows[0]);
+    res.status(200).json(updatedMatchup.rows[0]);
   } catch (err) {
     console.log(err);
   }
