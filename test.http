@@ -1,1 +1,3 @@
 GET http://localhost:7000/
+
+GET http://bookxmovie-api.herokuapp.com/

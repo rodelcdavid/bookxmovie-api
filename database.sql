@@ -19,6 +19,7 @@ CREATE TABLE matchups(
     popularity INTEGER NOT NULL
 );
 
+-- TODO: Add date voted
 --uservotes table
 CREATE TABLE user_votes(
     user_id VARCHAR NOT NULL,
