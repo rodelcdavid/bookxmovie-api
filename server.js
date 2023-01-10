@@ -195,7 +195,7 @@ app.post("/vote/:matchupId", async (req, res) => {
 //remove vote transaction
 app.patch("/remove-vote/:matchupId", async (req, res) => {
   const { matchupId } = req.params;
-  const { userId } = req.body;
+  const { userId, votedFor } = req.body;
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
