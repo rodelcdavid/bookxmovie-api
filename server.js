@@ -6,21 +6,25 @@ const bcrypt = require("bcrypt");
 const { Pool } = require("pg");
 const app = express();
 
-// const pool = new Pool({
-//   user: "postgres",
-//   host: "localhost",
-//   port: "5432",
-//   password: "admin",
-//   database: "bookxmovie",
-// });
-
-// For heroku
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+let pool;
+if (process.env.NODE_ENV === "development") {
+  pool = new Pool({
+    user: "postgres",
+    host: "localhost",
+    port: "5432",
+    password: "admin",
+    database: "bookxmovie",
+  });
+}
+if (process.env.NODE_ENV === "production") {
+  // For heroku
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  });
+}
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -152,44 +156,6 @@ app.post("/add", async (req, res) => {
   }
 });
 
-//update votes in matchups
-app.patch("/matchups/:matchupId", async (req, res) => {
-  const { matchupId } = req.params;
-  const { votedFor } = req.body;
-  try {
-    let updateQuery;
-    if (votedFor === "movie") {
-      updateQuery = `UPDATE matchups SET movie_votes = movie_votes + 1 WHERE id = $1 RETURNING *`;
-    } else {
-      updateQuery = `UPDATE matchups SET book_votes = book_votes + 1 WHERE id = $1 RETURNING *`;
-    }
-    const updatedMatchup = await pool.query(updateQuery, [matchupId]);
-    res.status(200).json(updatedMatchup.rows[0]);
-  } catch (err) {
-    console.log(err);
-  }
-});
-
-//add votes in user_votes
-app.post("/user-votes/:userId", async (req, res) => {
-  const { userId } = req.params;
-  const { matchupId, votedFor } = req.body;
-
-  try {
-    const insertQuery = `INSERT INTO user_votes VALUES($1, $2, $3) RETURNING *`;
-
-    const userVote = await pool.query(insertQuery, [
-      userId,
-      matchupId,
-      votedFor,
-    ]);
-    res.status(200).json(userVote.rows[0]);
-    // res.status(200).json(matchups.rows);
-  } catch (err) {
-    console.log(err);
-  }
-});
-
 //add vote transaction
 app.post("/vote/:matchupId", async (req, res) => {
   const { matchupId } = req.params;
@@ -226,6 +192,38 @@ app.post("/vote/:matchupId", async (req, res) => {
   }
 });
 
+//remove vote transaction
+app.patch("/remove-vote/:matchupId", async (req, res) => {
+  const { matchupId } = req.params;
+  const { userId } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    //remove vote in matchups table
+    let updateQuery;
+    if (votedFor === "movie") {
+      updateQuery = `UPDATE matchups SET movie_votes = movie_votes - 1 WHERE id = $1 RETURNING *`;
+    } else {
+      updateQuery = `UPDATE matchups SET book_votes = book_votes - 1 WHERE id = $1 RETURNING *`;
+    }
+    const updatedMatchup = await pool.query(updateQuery, [matchupId]);
+
+    //remove user vote
+    const deleteQuery = `DELETE FROM user_votes WHERE user_id = $1 AND matchup_id = $2 RETURNING *`;
+
+    const userVote = await pool.query(deleteQuery, [userId, matchupId]);
+
+    //just send res status 200
+    res.status(200).json("Vote deleted");
+  } catch (e) {
+    await client.query("ROLLBACK");
+    res.status(400).json(e);
+  } finally {
+    client.release();
+  }
+});
+
 //delete
 app.delete("/delete", async (req, res) => {
   const { matchupId } = req.body;
@@ -241,7 +239,7 @@ app.delete("/delete", async (req, res) => {
   }
 });
 
-//update vote
+//update vote (edit vote)
 app.patch("/votes/:matchupId", async (req, res) => {
   const { matchupId } = req.params;
   const { bookVotes, movieVotes } = req.body;
@@ -262,4 +260,6 @@ app.patch("/votes/:matchupId", async (req, res) => {
 
 const PORT = process.env.PORT;
 
-app.listen(PORT || 3000, () => console.log(`App listening to port ${PORT}`));
+app.listen(PORT || 7000, () =>
+  console.log(`App listening to port ${PORT || 7000}`)
+);
